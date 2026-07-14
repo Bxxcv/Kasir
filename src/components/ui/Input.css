@@ -1,0 +1,64 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.field__label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-700);
+}
+
+.field__control {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  background: var(--paper-0);
+  border: 1.5px solid var(--line-200);
+  border-radius: var(--r-md);
+  padding: 0 var(--sp-3);
+  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.field__control:focus-within {
+  border-color: var(--brass-500);
+  box-shadow: 0 0 0 3px var(--brass-100);
+}
+
+.field--error .field__control {
+  border-color: var(--danger-500);
+}
+
+.field__icon {
+  color: var(--text-300);
+  font-size: 1rem;
+}
+
+.field__input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 11px 2px;
+  font-size: var(--fs-base);
+  color: var(--text-900);
+  min-width: 0;
+}
+
+.field__input::placeholder { color: var(--text-300); }
+.field__input:disabled { color: var(--text-300); }
+
+.field__suffix {
+  font-size: var(--fs-xs);
+  color: var(--text-500);
+  white-space: nowrap;
+}
+
+.field__msg {
+  font-size: var(--fs-2xs);
+  color: var(--text-500);
+}
+
+.field__msg--error { color: var(--danger-500); }
