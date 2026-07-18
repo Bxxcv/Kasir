@@ -1,100 +1,142 @@
-# Kasir Digital — Toko Berkah Jaya
+# Portal Akademik Sekolah — MVP
 
-Aplikasi kasir/POS untuk toko, café, resto, dan UMKM modern. Dibangun dengan React + Vite,
-siap dikembangkan di Acode dan di-deploy ke Vercel/Netlify tanpa rombak arsitektur.
+Fondasi (Pass 1) dari platform akademik terpadu: **landing page, autentikasi, dashboard shell, dan RBAC** untuk 8 peran. Modul operasional (absensi, nilai, SPP, dll) belum diimplementasikan — sudah direncanakan di roadmap dan sudah punya tempat di routing/sidebar, tinggal diisi.
 
-## Status build ini (MVP tahap 1)
+## 1. Analisis Kebutuhan
 
-Halaman yang **sudah jadi & fungsional**:
-- **Login** — form PIN kasir, layout split-screen
-- **Dashboard** — KPI hari ini, tren penjualan 7 hari, stok menipis, produk terlaris, transaksi terbaru
-- **Kasir / POS** — search produk, kategori, keranjang, edit qty, diskon item/total, catatan,
-  hold/resume order, split payment, hitung kembalian otomatis, struk sukses
-- **Produk** — daftar, filter/cari, tambah/edit produk, toggle status aktif
+| Kebutuhan | Status di Pass 1 |
+|---|---|
+| Identitas & akses multi-peran (RBAC) | Selesai — 8 role, guard route, RLS Supabase |
+| Landing page publik (info sekolah, PPDB, berita) | Selesai (konten statis, siap disambung ke CMS/tabel berita) |
+| Login / Register | Selesai (self-register terbatas ke siswa & guru) |
+| Dashboard per peran | Shell selesai, widget data masih placeholder |
+| Data Siswa, Guru, Kelas, Absensi, Nilai, Rapor, SPP, Perpustakaan, PPDB, Berita, Galeri, Event, Chat, Notifikasi | Belum — lihat Roadmap paragraf 9 |
 
-Halaman **Stok, Pelanggan, Laporan, Karyawan, Pengaturan** sudah ada di routing & navigasi
-(sidebar + bottom nav) sebagai placeholder — struktur, layout, dan pola desainnya sudah
-konsisten, tinggal diisi mengikuti pola yang sama seperti halaman Produk/Dashboard.
-
-## Sistem Desain — "Ledger & Ink"
-
-Dipilih agar tidak terasa generik/template AI: terinspirasi dari **buku kas fisik** yang
-biasa dipakai UMKM (sampul gelap, kertas nota) dan **laci kasir logam lama** (aksen kuningan).
-
-- **Warna**: `--ink-900 #10241f` (gelap, sidebar/header), `--paper-0 #fbfaf6` (kertas nota),
-  `--brass-500 #b1812f` (aksen kuningan/CTA). Semua token ada di `src/styles/tokens.css`.
-- **Tipografi**: Space Grotesk (heading/display) + Inter (body) + JetBrains Mono (harga & angka,
-  supaya rapi berjajar/tabular — kelas util `.num`).
-- **Elemen signature**: tepi "robek" ala kertas struk di panel keranjang, badge bergaya
-  "cap tinta" (`Badge stamp`) untuk status Lunas/Batal, panel keranjang selalu menampilkan
-  info seperti nota fisik.
-- Semua warna/spacing/radius pakai CSS custom properties — gampang diganti brand lain
-  cukup dari `tokens.css`, tidak perlu sentuh komponen.
-
-## Struktur folder
+## 2. Sitemap
 
 ```
-kasir-pos/
-├── index.html                  # entry HTML, load font & Bootstrap Icons via CDN
-├── src/
-│   ├── main.jsx                 # entry point React
-│   ├── App.jsx                  # routing (react-router-dom)
-│   ├── styles/
-│   │   ├── tokens.css           # design tokens (warna, tipografi, spacing, shadow)
-│   │   └── global.css           # reset & base style
-│   ├── components/
-│   │   ├── layout/               # Sidebar, BottomNav, Topbar, AppLayout
-│   │   └── ui/                   # Button, Input, Modal, Badge, Toast, EmptyState, Skeleton
-│   ├── pages/
-│   │   ├── Login/
-│   │   ├── Dashboard/
-│   │   ├── Kasir/                # Kasir.jsx, PaymentModal.jsx, HoldOrdersModal.jsx
-│   │   └── Produk/                # Produk.jsx, ProductFormModal.jsx
-│   ├── context/
-│   │   ├── AppContext.jsx        # user/role, sidebar collapse
-│   │   └── CartContext.jsx       # state keranjang transaksi kasir
-│   ├── data/
-│   │   ├── mockData.js           # data contoh (ganti dengan API/DB asli)
-│   │   └── navConfig.js          # daftar menu navigasi + role akses
-│   └── hooks/
-│       └── format.js             # formatRupiah()
-└── package.json
+/                     Landing (publik)
+/masuk                Login
+/daftar               Register (siswa/guru)
+/dasbor               Dashboard (dilindungi, isi berbeda per role)
+  /dasbor/jadwal       (siswa, guru)
+  /dasbor/nilai        (siswa, guru)
+  /dasbor/absensi      (siswa, guru, wali_kelas)
+  /dasbor/pembayaran   (siswa, bendahara)
+  /dasbor/siswa        (wali_kelas, staff_tu, admin)
+  /dasbor/guru         (staff_tu, admin)
+  /dasbor/rapor        (wali_kelas)
+  /dasbor/ppdb         (staff_tu)
+  /dasbor/laporan      (bendahara)
+  /dasbor/pengguna     (admin, super_admin)
+  /dasbor/konten       (admin)
+  /dasbor/analitik     (admin, super_admin)
+  /dasbor/pengaturan   (super_admin)
+```
+Sub-halaman di atas sudah dipetakan di `src/components/dashboard/navConfig.ts` tapi rute & komponennya belum dibuat — tambahkan satu per satu ke `AppRouter.tsx` mengikuti pola `/dasbor`.
+
+## 3. User Flow (autentikasi)
+
+```
+Guest -> /daftar -> isi form (peran: siswa/guru) -> Supabase Auth signUp()
+      -> trigger DB buat baris profiles (role sesuai pilihan)
+      -> email konfirmasi -> /masuk -> signIn()
+      -> useAuthListener sinkron session -> fetch profiles
+      -> redirect /dasbor -> sidebar & widget menyesuaikan profile.role
+
+Peran lain (wali_kelas, staff_tu, bendahara, admin, super_admin)
+      -> dibuat oleh Admin lewat panel Manajemen Pengguna (belum diimplementasikan)
+      -> BUKAN lewat /daftar publik
 ```
 
-**Pola tiap halaman**: 1 folder di `src/pages/`, berisi `NamaHalaman.jsx` + `NamaHalaman.css`
-(scoped per file, bukan 1 file CSS raksasa). Modal terkait sebuah halaman ditaruh di folder
-yang sama (contoh: `PaymentModal.jsx` ada di dalam `pages/Kasir/`).
+## 4. Database Schema & ERD (Pass 1)
 
-## Menjalankan di Acode / lokal
+```
+auth.users (Supabase managed)
+     | 1:1
+     v
+profiles ------------> kelas
+ id (PK, = users.id)   id (PK)
+ full_name             nama
+ role (enum)           tingkat
+ avatar_url            wali_kelas_id (FK -> users.id)
+ nis_nip               tahun_ajaran
+ kelas_id (FK)
+ created_at
+```
+
+Role enum: `siswa | guru | wali_kelas | staff_tu | bendahara | admin | super_admin`
+(`guest` = belum login, tidak disimpan sebagai role).
+
+File lengkap: `supabase/schema.sql` — termasuk trigger auto-create profile dan RLS policy per role.
+
+Tabel modul lanjutan (`siswa_detail`, `guru_detail`, `absensi`, `nilai`, `spp_tagihan`, `buku`, `peminjaman`, `pendaftar_ppdb`, `berita`, `galeri`, `event`, `pengumuman`, `pesan_chat`, `notifikasi`) sengaja belum dibuat — didesain di Roadmap paragraf 9 supaya skema lahir dari kebutuhan modul yang benar-benar dikerjakan, bukan ditebak di awal.
+
+## 5. Folder Structure
+
+```
+src/
+  components/{ui,auth,dashboard}
+  layouts/            PublicLayout, DashboardLayout
+  pages/{auth,dashboard,public}
+  hooks/              useAuth, useAuthListener
+  lib/                supabase.ts
+  services/           authService.ts (nanti: siswaService, nilaiService, ...)
+  stores/             authStore.ts (Zustand)
+  router/             AppRouter.tsx
+  types/              auth.ts
+  utils/
+  assets/
+supabase/
+  schema.sql
+```
+
+## 6. API Design
+
+Pass 1 tidak punya REST/Edge Function custom — semua akses data lewat **Supabase client langsung** (`supabase.from(...).select()`), diamankan oleh RLS, bukan oleh layer API terpisah. Ini pola yang disarankan Supabase untuk MVP: RLS *adalah* authorization layer-nya.
+
+Saat modul butuh logika yang tidak aman dilakukan di client (mis. hitung ulang saldo SPP, generate PDF rapor), itu jadi **Supabase Edge Function**, dipanggil via `supabase.functions.invoke("nama-fungsi")`. Belum ada di Pass 1.
+
+## 7. UI Design
+
+Konsep: **"Buku Induk"** (ledger sekolah) — navy `#16233f` + emas `#b8933f` di atas latar paper dingin `#f2f3ef` (sengaja bukan kombinasi cream+terracotta yang generik). Fraunces untuk heading (karakter institusional), Inter untuk body, IBM Plex Mono untuk data (NIS, tanggal, kode). Elemen tanda tangan: **motif kartu pelajar** (perforated ID card) dipakai konsisten di hero landing dan header sidebar dashboard sebagai penanda identitas & role. Garis ledger (`.ledger-rule`) hanya dipakai untuk konten yang benar-benar tabular (pengumuman bertanggal, nantinya jadwal/nilai/absensi).
+
+## 8. Authentication Flow & Security
+
+- Supabase Auth (email/password) sebagai identity provider.
+- `profiles.role` adalah satu-satunya sumber kebenaran RBAC — dibaca lewat `current_role()` (security definer, menghindari RLS rekursif).
+- `ProtectedRoute` di client mengecek role untuk UX (redirect cepat), **tapi keamanan sesungguhnya ada di RLS Postgres**, bukan di client.
+- Self-registration publik dibatasi ke `siswa`/`guru` di level UI *dan* level DB (kolom `role` di-trigger dari metadata, tapi kenaikan ke role lain hanya lewat policy admin).
+- Checklist yang diminta prompt asal (RLS, validasi, rate limit, CSRF, XSS, env vars):
+  - RLS: diterapkan di `profiles`, `kelas`.
+  - Validasi input: sebagian (HTML5 required/minLength) — validasi skema penuh (mis. Zod) belum ditambahkan.
+  - Rate limit, CSRF: ditangani di layer Supabase Auth + Vercel/edge (bukan dikonfigurasi manual di kode Pass 1).
+  - XSS: React escaping default + tidak ada `dangerouslySetInnerHTML` di kode ini.
+  - Env vars: `.env.example` disediakan, `.env` asli tidak boleh di-commit.
+
+## 9. Roadmap MVP -> Production
+
+**Pass 1 (selesai)** — Landing, Auth, Dashboard shell, RBAC, folder structure.
+
+**Pass 2** — Data Siswa & Guru (CRUD + tabel `kelas` terisi), Manajemen Pengguna admin (naikkan role).
+
+**Pass 3** — Absensi + Jadwal (tabel `jadwal`, `absensi`, ledger-style table view).
+
+**Pass 4** — Nilai + Rapor PDF (tabel `nilai`, generate PDF via Edge Function).
+
+**Pass 5** — Pembayaran SPP (tabel `spp_tagihan`, integrasi payment gateway lokal — perlu keputusan provider).
+
+**Pass 6** — Perpustakaan, PPDB, Berita/Galeri/Event/Pengumuman (CMS ringan di admin panel).
+
+**Pass 7** — Chat realtime (Supabase Realtime) + Notifikasi.
+
+**Pass 8** — PWA, SEO, Analytics, Export PDF/Excel/CSV, hardening (Zod validation, rate limiting eksplisit), testing (Vitest + Playwright), deploy production (Vercel + Supabase project terpisah dev/prod).
+
+## 10. Menjalankan Project
 
 ```bash
 npm install
-npm run dev       # dev server, buka di browser HP/laptop
-npm run build     # build produksi ke folder dist/
+cp .env.example .env      # isi VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY dari project Supabase kamu
+# jalankan supabase/schema.sql di SQL Editor project Supabase kamu
+npm run dev
 ```
-
-Tidak ada dependency native/berat — hanya `react`, `react-dom`, `react-router-dom`.
-Icon pakai Bootstrap Icons via CDN (bukan npm package) supaya bundle tetap ringan dan
-gampang dibuka di editor mobile seperti Acode.
-
-## Deploy
-
-Project ini adalah Vite app standar — tinggal:
-- **Vercel**: import repo, framework preset "Vite" otomatis terdeteksi
-- **Netlify**: build command `npm run build`, publish directory `dist`
-
-Tidak perlu konfigurasi tambahan.
-
-## Melanjutkan ke fitur berikutnya
-
-Prioritas MVP selanjutnya yang disarankan (lihat pola di `Produk.jsx` & `Dashboard.jsx`
-sebagai referensi struktur):
-1. **Stok** — mutasi stok masuk/keluar, histori, penyesuaian (bisa reuse pola tabel di Produk)
-2. **Riwayat & Detail Transaksi** — reuse `RECENT_TRANSACTIONS` di `mockData.js`, buat halaman
-   detail per transaksi + tombol cetak ulang struk (reuse styling `receipt-mini` dari PaymentModal)
-3. **Laporan** — filter tanggal + reuse pola `trend-chart` dari Dashboard untuk grafik
-4. **Pelanggan & Karyawan** — pola tabel sama seperti Produk, tinggal ganti kolom
-5. **Pengaturan** — form-form sederhana, reuse komponen `Input`/`pf-select`
-
-Saat semua data masih mock (`src/data/mockData.js`) — tinggal ganti dengan pemanggilan API/
-Supabase/Firebase saat backend siap; struktur komponen tidak perlu berubah.

@@ -1,0 +1,54 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap");
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------
+   Design concept: "Buku Induk" (school ledger)
+   Navy + brass palette evoking seragam (uniform) and school emblem
+   metal, on a cool paper background -- deliberately not the cream +
+   terracotta AI default. Fraunces gives headings institutional
+   gravity; ledger hairlines are used only where content is genuinely
+   tabular (jadwal, absensi, nilai) -- never as pure decoration.
+--------------------------------------------------------------------- */
+
+@theme {
+  --color-navy: #16233f;
+  --color-navy-light: #253a63;
+  --color-gold: #b8933f;
+  --color-gold-light: #d4b876;
+  --color-paper: #f2f3ef;
+  --color-paper-line: #dcded6;
+  --color-forest: #3f6b4f;
+  --color-rust: #9c4a3c;
+  --color-ink: #14213d;
+
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.ledger-rule {
+  border-bottom: 1px solid var(--color-paper-line);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
