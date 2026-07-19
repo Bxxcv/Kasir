@@ -1,0 +1,33 @@
+[project]
+name = "myai"
+version = "0.1.0"
+description = "myai — open source AI Coding Agent CLI. Local-first, bring your own API key."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = [
+    "typer>=0.15.1",
+    "rich>=13.9.4",
+    "httpx>=0.28.1",
+    "pydantic>=2.10.3",
+    "pydantic-settings>=2.7.0",
+    "pyyaml>=6.0.2",
+    "tenacity>=9.0.0",
+    "gitpython>=3.1.43",
+    "watchdog>=6.0.0",
+    "tiktoken>=0.8.0",
+]
+
+[project.scripts]
+myai = "myai.cli.main:entrypoint"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/myai"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
